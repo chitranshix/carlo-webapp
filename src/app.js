@@ -207,12 +207,17 @@ class LexiconApp {
             });
         });
 
+        // Definitions and Sentences can each be hidden, but never both at
+        // once - a card (in the list or in Test Mode) needs at least one
+        // visible clue. So turning the last visible one off is a no-op.
         toolbarEl.querySelector('#toggle-def-btn')?.addEventListener('click', () => {
+            if (this.state.showDef && !this.state.showSentence) return;
             this.state.showDef = !this.state.showDef;
             this.render();
         });
 
         toolbarEl.querySelector('#toggle-sentence-btn')?.addEventListener('click', () => {
+            if (this.state.showSentence && !this.state.showDef) return;
             this.state.showSentence = !this.state.showSentence;
             this.render();
         });
@@ -248,7 +253,9 @@ class LexiconApp {
                 onCancelDiscard: this.handleCancelDiscardTest,
                 onConfirmDiscard: this.handleConfirmDiscardTest,
                 onDone: this.handleRequestCloseTest,
-                onRetry: this.handleRetryTest
+                onRetry: this.handleRetryTest,
+                showDef: this.state.showDef,
+                showSentence: this.state.showSentence
             });
             rowContainer.appendChild(testContentEl);
         } else if (filtered.length === 0) {

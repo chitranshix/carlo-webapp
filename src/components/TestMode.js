@@ -64,13 +64,20 @@ function renderWordTile(item, session, callbacks) {
 
 function renderCardTile(item, session, callbacks) {
     const { classes, locked } = tileVisualState(session, 'card', item.id);
+    // Definitions/Sentences toggles apply here too, same blur treatment as
+    // the browse list. The toggle handlers already prevent turning both
+    // off at once, but fall back to showing the definition just in case,
+    // so a card is never left with nothing readable on it.
+    let showDef = callbacks.showDef !== false;
+    let showSentence = callbacks.showSentence !== false;
+    if (!showDef && !showSentence) showDef = true;
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.disabled = locked;
     tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none ${classes}`;
     tile.innerHTML = `
-        <p class="text-sm">${item.definition}</p>
-        <p class="text-xs italic mt-1 opacity-70">${item.sentence || ''}</p>
+        <p class="text-sm ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
+        <p class="text-xs italic mt-1 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${item.sentence || ''}</p>
     `;
     if (!locked) {
         tile.addEventListener('click', () => callbacks.onTileClick('card', item.id));
