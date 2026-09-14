@@ -22,6 +22,8 @@ class LexiconApp {
         // to call getTestPool() here since this.state/this.vocabList are
         // already set above; it just won't have <2 words on a fresh load.
         this.testSession = createTestSession(this.getTestPool(), 5);
+        this.toast = null;
+        this.toastTimeoutId = null;
 
         const root = document.getElementById(rootElementId);
         if (!root) throw new Error("Root element missing");
@@ -43,11 +45,25 @@ class LexiconApp {
     handleStartTest = () => {
         const pool = this.getTestPool();
         if (pool.length < 2) {
-            alert("Not enough words match the current filters to start a test. Try widening your filters.");
+            this.showToast("Not enough words match the current filters to start a test - try widening them.");
             return;
         }
         this.testSession = createTestSession(pool, Math.min(5, pool.length));
         this.render();
+    }
+
+    // A small dismissible banner instead of a native alert() - stays
+    // consistent with the rest of the app's custom-styled UI (the
+    // exit-confirmation dialog, the toolbar, etc. are all custom too).
+    showToast(message, duration = 3500) {
+        if (this.toastTimeoutId) clearTimeout(this.toastTimeoutId);
+        this.toast = message;
+        this.render();
+        this.toastTimeoutId = setTimeout(() => {
+            this.toast = null;
+            this.toastTimeoutId = null;
+            this.render();
+        }, duration);
     }
 
     handleRetryTest = () => {
@@ -154,10 +170,8 @@ class LexiconApp {
     // Visual feedback for a blocked "hide the last visible clue" click:
     // shake the button that refused to toggle, and ring-highlight the
     // sibling button the user needs to turn on first. Uses the Web
-    // Animations API directly rather than a CSS keyframe class, since
-    // index.html's stylesheet link is currently broken (points at
-    // style.css, but the file on disk is style.cc) and no custom CSS
-    // is actually loading in production right now.
+    // Animations API directly rather than a CSS keyframe class, so it
+    // doesn't depend on style.css defining one.
     flashBlockedToggle(blockedBtn, otherBtn) {
         blockedBtn?.animate(
             [
@@ -326,6 +340,22 @@ class LexiconApp {
 
         main.appendChild(rowContainer);
         this.container.appendChild(main);
+
+        if (this.toast) {
+            const toastEl = document.createElement('div');
+            toastEl.className = "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#111111] text-white text-sm px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 max-w-md";
+            toastEl.innerHTML = `
+                <span>${this.toast}</span>
+                <button id="toast-dismiss-btn" class="text-white/70 hover:text-white transition cursor-pointer text-base leading-none">&times;</button>
+            `;
+            toastEl.querySelector('#toast-dismiss-btn')?.addEventListener('click', () => {
+                if (this.toastTimeoutId) clearTimeout(this.toastTimeoutId);
+                this.toastTimeoutId = null;
+                this.toast = null;
+                this.render();
+            });
+            this.container.appendChild(toastEl);
+        }
     }
 }
 
