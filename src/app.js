@@ -140,6 +140,32 @@ class LexiconApp {
         });
     }
 
+    // Visual feedback for a blocked "hide the last visible clue" click:
+    // shake the button that refused to toggle, and ring-highlight the
+    // sibling button the user needs to turn on first. Uses the Web
+    // Animations API directly rather than a CSS keyframe class, since
+    // index.html's stylesheet link is currently broken (points at
+    // style.css, but the file on disk is style.cc) and no custom CSS
+    // is actually loading in production right now.
+    flashBlockedToggle(blockedBtn, otherBtn) {
+        blockedBtn?.animate(
+            [
+                { transform: 'translateX(0)' },
+                { transform: 'translateX(-4px)' },
+                { transform: 'translateX(4px)' },
+                { transform: 'translateX(-3px)' },
+                { transform: 'translateX(3px)' },
+                { transform: 'translateX(0)' }
+            ],
+            { duration: 320, easing: 'ease-in-out' }
+        );
+
+        if (otherBtn) {
+            otherBtn.classList.add('ring-2', 'ring-[#111111]', 'ring-offset-1');
+            setTimeout(() => otherBtn.classList.remove('ring-2', 'ring-[#111111]', 'ring-offset-1'), 700);
+        }
+    }
+
     initEventListeners() {
         document.addEventListener('click', () => {
             document.getElementById('pos-menu-list')?.classList.add('hidden');
@@ -209,15 +235,27 @@ class LexiconApp {
 
         // Definitions and Sentences can each be hidden, but never both at
         // once - a card (in the list or in Test Mode) needs at least one
-        // visible clue. So turning the last visible one off is a no-op.
-        toolbarEl.querySelector('#toggle-def-btn')?.addEventListener('click', () => {
-            if (this.state.showDef && !this.state.showSentence) return;
+        // visible clue. Turning off the last visible one doesn't just do
+        // nothing silently - it shakes the button you clicked and briefly
+        // highlights the one you need to turn on first, so it's obvious
+        // *why* nothing happened and what to do about it.
+        const defBtn = toolbarEl.querySelector('#toggle-def-btn');
+        const sentenceBtn = toolbarEl.querySelector('#toggle-sentence-btn');
+
+        defBtn?.addEventListener('click', () => {
+            if (this.state.showDef && !this.state.showSentence) {
+                this.flashBlockedToggle(defBtn, sentenceBtn);
+                return;
+            }
             this.state.showDef = !this.state.showDef;
             this.render();
         });
 
-        toolbarEl.querySelector('#toggle-sentence-btn')?.addEventListener('click', () => {
-            if (this.state.showSentence && !this.state.showDef) return;
+        sentenceBtn?.addEventListener('click', () => {
+            if (this.state.showSentence && !this.state.showDef) {
+                this.flashBlockedToggle(sentenceBtn, defBtn);
+                return;
+            }
             this.state.showSentence = !this.state.showSentence;
             this.render();
         });

@@ -3,9 +3,24 @@ export function createToolbar(state, counts, testProgress = null) {
     const filtersDisabledAttrs = filtersDisabled
         ? `disabled title="Filters are locked during a test - exit or finish the test to change them"`
         : '';
-    const filtersDisabledClasses = filtersDisabled
-        ? 'opacity-50 cursor-not-allowed'
-        : 'hover:bg-gray-50 cursor-pointer';
+
+    // A filter button gets its own "active" chip color whenever it's
+    // narrowed away from "all", so it's obvious at a glance which filters
+    // are currently applied - not just visible in the (easy-to-miss) label
+    // text. The locked-during-test dimming layers on top of whichever
+    // color it already has, so you can still see what's active while it's
+    // locked, just greyed down.
+    const filterButtonClasses = (isActive) => {
+        const colorClasses = isActive
+            ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold'
+            : 'bg-white border-[#E1E1E1] text-[#333333] font-medium';
+        const interactionClasses = filtersDisabled
+            ? 'opacity-50 cursor-not-allowed'
+            : `${isActive ? 'hover:bg-blue-100' : 'hover:bg-gray-50'} cursor-pointer`;
+        return `${colorClasses} ${interactionClasses}`;
+    };
+    const posBtnClasses = filterButtonClasses(state.pos !== 'all');
+    const statusBtnClasses = filterButtonClasses(state.status !== 'all');
 
     const toolbar = document.createElement('div');
     toolbar.className = "flex flex-wrap items-center justify-between gap-4 pb-2";
@@ -13,7 +28,7 @@ export function createToolbar(state, counts, testProgress = null) {
         <div class="flex flex-wrap items-center gap-3 text-sm">
             <!-- Custom Part of Speech Dropdown -->
             <div class="relative" id="pos-dropdown-container">
-                <button id="pos-menu-btn" ${filtersDisabledAttrs} class="bg-white px-3.5 py-2 rounded-lg border border-[#E1E1E1] text-[#333333] text-xs font-medium flex items-center space-x-3 transition shadow-xs select-none ${filtersDisabledClasses}">
+                <button id="pos-menu-btn" ${filtersDisabledAttrs} class="px-3.5 py-2 rounded-lg border text-xs flex items-center space-x-3 transition shadow-xs select-none ${posBtnClasses}">
                     <span id="pos-selected-label">${formatPosLabel(state.pos)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
@@ -58,7 +73,7 @@ export function createToolbar(state, counts, testProgress = null) {
 
             <!-- Custom Status Dropdown -->
             <div class="relative" id="status-dropdown-container">
-                <button id="status-menu-btn" ${filtersDisabledAttrs} class="bg-white px-3.5 py-2 rounded-lg border border-[#E1E1E1] text-[#333333] text-xs font-medium flex items-center space-x-3 transition shadow-xs select-none ${filtersDisabledClasses}">
+                <button id="status-menu-btn" ${filtersDisabledAttrs} class="px-3.5 py-2 rounded-lg border text-xs flex items-center space-x-3 transition shadow-xs select-none ${statusBtnClasses}">
                     <span id="status-selected-label">${formatStatusLabel(state.status)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
