@@ -53,7 +53,7 @@ function renderWordTile(item, session, callbacks) {
     tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none flex items-center justify-between gap-2 ${classes}`;
     tile.innerHTML = `
         <span class="flex items-center min-w-0">
-            <span class="font-serif-gr font-bold text-sm truncate">${item.word}</span>
+            <span class="font-serif-gr font-bold text-base truncate">${item.word}</span>
             <span class="ml-3">${posBadge(item.pos)}</span>
         </span>
         <button type="button" data-action="audio" title="Pronounce Word" class="shrink-0 p-1 rounded hover:bg-black/5 transition cursor-pointer">
@@ -96,8 +96,8 @@ function renderCardTile(item, session, callbacks) {
     tile.disabled = locked;
     tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none ${classes}`;
     tile.innerHTML = `
-        <p class="text-sm ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
-        <p class="text-xs italic mt-2 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${redactWord(item.word, item.sentence) || ''}</p>
+        <p class="text-base ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
+        <p class="text-sm italic mt-2 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${redactWord(item.word, item.sentence) || ''}</p>
     `;
     if (!locked) {
         tile.addEventListener('click', () => callbacks.onTileClick('card', item.id));
