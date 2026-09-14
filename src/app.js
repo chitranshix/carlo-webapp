@@ -37,13 +37,34 @@ class LexiconApp {
     }
 
     handleStartTest = () => {
-        this.testSession = createTestSession(this.vocabList, 5);
+        const pool = this.getTestPool();
+        if (pool.length < 2) {
+            alert("Not enough words match the current filters to start a test. Try widening your filters.");
+            return;
+        }
+        this.testSession = createTestSession(pool, Math.min(5, pool.length));
         this.render();
     }
 
     handleRetryTest = () => {
-        this.testSession = createTestSession(this.vocabList, 5);
+        const pool = this.getTestPool();
+        this.testSession = createTestSession(pool, Math.min(5, pool.length));
         this.render();
+    }
+
+    // The pool Test Mode draws from is just the current search/pos/status
+    // filters applied to the word list - same filters as the browse view.
+    // Exception: when Status is left on "all" we quietly drop Mastered words,
+    // since a blind-random test would otherwise waste reps re-testing words
+    // you already know. Explicitly filtering to "Mastered" (or any other
+    // status) is respected as-is - that's how you deliberately drill revision.
+    getTestPool() {
+        const filtered = this.getFilteredData();
+        if (this.state.status === 'all') {
+            const notMastered = filtered.filter(item => item.status !== 'Mastered');
+            return notMastered.length >= 2 ? notMastered : filtered;
+        }
+        return filtered;
     }
 
     handleTestTileClick = (side, id) => {
