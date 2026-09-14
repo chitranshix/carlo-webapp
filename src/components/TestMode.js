@@ -1,9 +1,10 @@
 import { isSessionComplete, getScore, statusForResult } from '../services/testService.js';
+import { posBadge, statusIcon } from '../utils/vocabIcons.js';
 
 const STATUS_META = {
-    Unseen: { label: 'Unseen', color: 'text-gray-400', icon: unseenIcon() },
-    Learning: { label: 'Learning', color: 'text-amber-600', icon: learningIcon() },
-    Mastered: { label: 'Mastered', color: 'text-green-600', icon: masteredIcon() }
+    Unseen: { label: 'Unseen', color: 'text-gray-400', icon: statusIcon('Unseen', 'w-4 h-4 text-gray-400') },
+    Learning: { label: 'Learning', color: 'text-amber-600', icon: statusIcon('Learning', 'w-4 h-4 text-amber-600') },
+    Mastered: { label: 'Mastered', color: 'text-green-600', icon: statusIcon('Mastered', 'w-4 h-4 text-green-600') }
 };
 
 /**
@@ -26,21 +27,18 @@ export function createTestContent(session, callbacks) {
 
 function renderMatching(session, callbacks) {
     const wrap = document.createElement('div');
-    wrap.className = "grid grid-cols-1 sm:grid-cols-2 gap-6";
-    wrap.innerHTML = `
-        <div id="test-word-col" class="space-y-2"></div>
-        <div id="test-card-col" class="space-y-2"></div>
-    `;
+    // Word tile i and card tile i are placed in the same grid row (rather
+    // than two separately-stacked columns), so each row's two cells get
+    // the same height for free via CSS grid's default row stretch - no
+    // manual height math needed. This is purely a visual pairing: wordOrder
+    // and cardOrder are still shuffled independently, so which word sits
+    // next to which card gives no hint about which ones actually match.
+    wrap.className = "grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2";
 
-    const wordCol = wrap.querySelector('#test-word-col');
-    const cardCol = wrap.querySelector('#test-card-col');
-
-    session.wordOrder.forEach(id => {
-        wordCol.appendChild(renderWordTile(findItem(session, id), session, callbacks));
-    });
-
-    session.cardOrder.forEach(id => {
-        cardCol.appendChild(renderCardTile(findItem(session, id), session, callbacks));
+    session.wordOrder.forEach((wordId, i) => {
+        const cardId = session.cardOrder[i];
+        wrap.appendChild(renderWordTile(findItem(session, wordId), session, callbacks));
+        wrap.appendChild(renderCardTile(findItem(session, cardId), session, callbacks));
     });
 
     return wrap;
@@ -48,16 +46,38 @@ function renderMatching(session, callbacks) {
 
 function renderWordTile(item, session, callbacks) {
     const { classes, locked } = tileVisualState(session, 'word', item.id);
-    const tile = document.createElement('button');
-    tile.type = 'button';
-    tile.disabled = locked;
-    tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none ${classes}`;
+    // A plain <button> can't contain the audio button (nested buttons are
+    // invalid HTML), so this is a div with its own click-to-select handling
+    // - including the keyboard access a real button gets for free.
+    const tile = document.createElement('div');
+    tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none flex items-center justify-between gap-2 ${classes}`;
     tile.innerHTML = `
-        <span class="font-serif-gr font-bold text-sm">${item.word}</span>
-        <span class="text-xs font-sans italic ml-1.5 opacity-70">(${item.pos})</span>
+        <span class="flex items-center min-w-0">
+            <span class="font-serif-gr font-bold text-sm truncate">${item.word}</span>
+            <span class="ml-3">${posBadge(item.pos)}</span>
+        </span>
+        <button type="button" data-action="audio" title="Pronounce Word" class="shrink-0 p-1 rounded hover:bg-black/5 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+        </button>
     `;
+
+    // Pronunciation stays available even on a resolved tile - only the
+    // "select this word for matching" behavior is locked once it's done.
+    tile.querySelector('[data-action="audio"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        callbacks.onAudioPlay?.(item.word);
+    });
+
     if (!locked) {
+        tile.setAttribute('role', 'button');
+        tile.tabIndex = 0;
         tile.addEventListener('click', () => callbacks.onTileClick('word', item.id));
+        tile.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                callbacks.onTileClick('word', item.id);
+            }
+        });
     }
     return tile;
 }
@@ -77,7 +97,7 @@ function renderCardTile(item, session, callbacks) {
     tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none ${classes}`;
     tile.innerHTML = `
         <p class="text-sm ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
-        <p class="text-xs italic mt-1 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${item.sentence || ''}</p>
+        <p class="text-xs italic mt-2 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${redactWord(item.word, item.sentence) || ''}</p>
     `;
     if (!locked) {
         tile.addEventListener('click', () => callbacks.onTileClick('card', item.id));
@@ -180,14 +200,15 @@ function findItem(session, id) {
     return session.items.find(i => i.id === id);
 }
 
-function unseenIcon() {
-    return `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 110-18 9 9 0 010 18zm0-13v4m0 4h.01"/></svg>`;
-}
-
-function learningIcon() {
-    return `<svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
-}
-
-function masteredIcon() {
-    return `<svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
+// Sentences are written to illustrate the word, so the word (or an
+// inflected form of it, e.g. "morose" -> "morosely") often appears right in
+// the sentence - a free giveaway during a matching test. Blank out the
+// word and anything glued onto the end of it, case-insensitively, wherever
+// it starts a token; length isn't preserved (always "_____") so the blank
+// itself doesn't leak how long the word is.
+function redactWord(word, sentence) {
+    if (!sentence || !word) return sentence;
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`\\b${escaped}\\w*`, 'gi');
+    return sentence.replace(pattern, '_____');
 }

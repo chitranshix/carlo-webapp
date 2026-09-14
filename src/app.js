@@ -17,8 +17,12 @@ class LexiconApp {
         };
         
         this.vocabList = [...INITIAL_VOCAB_DATA];
-        this.testSession = null;
-        
+        // Test Mode is the app's default screen now, not an opt-in extra -
+        // start with a live test session instead of the browse list. Safe
+        // to call getTestPool() here since this.state/this.vocabList are
+        // already set above; it just won't have <2 words on a fresh load.
+        this.testSession = createTestSession(this.getTestPool(), 5);
+
         const root = document.getElementById(rootElementId);
         if (!root) throw new Error("Root element missing");
         this.container = root;
@@ -87,11 +91,18 @@ class LexiconApp {
 
     handleRequestCloseTest = () => {
         if (!this.testSession) return;
+        const hasAnsweredAnything = Object.keys(this.testSession.results).length > 0;
         if (isSessionComplete(this.testSession)) {
             // Results are already applied to vocabList - just close.
             this.testSession = null;
-        } else {
+        } else if (hasAnsweredAnything) {
+            // Only warn about losing progress if there's actually progress
+            // to lose - otherwise (e.g. landing on the default test screen
+            // and immediately clicking away) this dialog would fire before
+            // the user has done anything at all.
             this.testSession.confirmingExit = true;
+        } else {
+            this.testSession = null;
         }
         this.render();
     }
@@ -292,6 +303,7 @@ class LexiconApp {
                 onConfirmDiscard: this.handleConfirmDiscardTest,
                 onDone: this.handleRequestCloseTest,
                 onRetry: this.handleRetryTest,
+                onAudioPlay: (w) => AudioService.speak(w),
                 showDef: this.state.showDef,
                 showSentence: this.state.showSentence
             });
