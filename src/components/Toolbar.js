@@ -1,4 +1,4 @@
-export function createToolbar(state, counts) {
+export function createToolbar(state, counts, testProgress = null) {
     const toolbar = document.createElement('div');
     toolbar.className = "flex flex-wrap items-center justify-between gap-4 pb-2";
     toolbar.innerHTML = `
@@ -88,6 +88,17 @@ export function createToolbar(state, counts) {
         </div>
 
         <div class="flex items-center space-x-3 text-xs text-[#767676]">
+            <button id="test-mode-btn" title="${testProgress ? 'Click to exit test' : 'Start a test'}" class="flex items-center space-x-1.5 px-3.5 py-2 rounded-lg transition select-none cursor-pointer font-medium shadow-xs ${testProgress
+                ? 'bg-amber-50 border border-amber-300 text-amber-700 hover:bg-amber-100'
+                : 'bg-[#111111] text-white hover:bg-black'}">
+                ${testProgress
+                    ? `<span class="relative flex h-2 w-2">
+                           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                           <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                       </span>`
+                    : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`}
+                <span>${testProgress && !testProgress.complete ? `Test Ongoing &middot; ${testProgress.resolved}/${testProgress.total}` : testProgress ? 'Test Ongoing' : 'Test Mode'}</span>
+            </button>
             <button id="toggle-def-btn" class="flex items-center space-x-1.5 bg-white px-3.5 py-2 rounded-lg border border-[#E1E1E1] hover:bg-gray-50 transition select-none cursor-pointer text-[#333333] font-medium shadow-xs ${!state.showDef ? 'opacity-50' : ''}">
                 <span>
                     <svg class="w-4 h-4 text-[#111111]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>

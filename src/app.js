@@ -1,8 +1,10 @@
 import { INITIAL_VOCAB_DATA } from './data/vocabData.js';
 import { AudioService } from './services/audioService.js';
+import { createTestSession, handleTileClick, isSessionComplete, statusForResult } from './services/testService.js';
 import { createHeader } from './components/Header.js';
 import { createToolbar } from './components/Toolbar.js';
 import { createWordRow } from './components/wordRow.js';
+import { createTestContent } from './components/TestMode.js';
 
 class LexiconApp {
     constructor(rootElementId) {
@@ -15,6 +17,7 @@ class LexiconApp {
         };
         
         this.vocabList = [...INITIAL_VOCAB_DATA];
+        this.testSession = null;
         
         const root = document.getElementById(rootElementId);
         if (!root) throw new Error("Root element missing");
@@ -30,6 +33,56 @@ class LexiconApp {
         if (item.status === 'Unseen') item.status = 'Learning';
         else if (item.status === 'Learning') item.status = 'Mastered';
         else item.status = 'Unseen';
+        this.render();
+    }
+
+    handleStartTest = () => {
+        this.testSession = createTestSession(this.vocabList, 5);
+        this.render();
+    }
+
+    handleRetryTest = () => {
+        this.testSession = createTestSession(this.vocabList, 5);
+        this.render();
+    }
+
+    handleTestTileClick = (side, id) => {
+        if (!this.testSession) return;
+        handleTileClick(this.testSession, side, id);
+        if (isSessionComplete(this.testSession)) {
+            this.applyTestResults();
+        }
+        this.render();
+    }
+
+    applyTestResults() {
+        this.testSession.items.forEach(item => {
+            const result = this.testSession.results[item.id];
+            const newStatus = statusForResult(result, item.originalStatus);
+            const vocabItem = this.vocabList.find(v => v.id === item.id);
+            if (vocabItem) vocabItem.status = newStatus;
+        });
+    }
+
+    handleRequestCloseTest = () => {
+        if (!this.testSession) return;
+        if (isSessionComplete(this.testSession)) {
+            // Results are already applied to vocabList - just close.
+            this.testSession = null;
+        } else {
+            this.testSession.confirmingExit = true;
+        }
+        this.render();
+    }
+
+    handleCancelDiscardTest = () => {
+        if (!this.testSession) return;
+        this.testSession.confirmingExit = false;
+        this.render();
+    }
+
+    handleConfirmDiscardTest = () => {
+        this.testSession = null;
         this.render();
     }
 
@@ -93,9 +146,12 @@ class LexiconApp {
         // Main Landmark Container
         const main = document.createElement('main');
         main.className = "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 flex-grow w-full space-y-4";
-        
-        // Toolbar Component
-        const toolbarEl = createToolbar(this.state, counts);
+
+        // Toolbar Component (always shown, including during Test Mode)
+        const testProgress = this.testSession
+            ? { resolved: Object.keys(this.testSession.results).length, total: this.testSession.items.length, complete: isSessionComplete(this.testSession) }
+            : null;
+        const toolbarEl = createToolbar(this.state, counts, testProgress);
         main.appendChild(toolbarEl);
 
         // Toolbar interactivity bindings
@@ -140,6 +196,14 @@ class LexiconApp {
             this.render();
         });
 
+        toolbarEl.querySelector('#test-mode-btn')?.addEventListener('click', () => {
+            if (this.testSession) {
+                this.handleRequestCloseTest();
+            } else {
+                this.handleStartTest();
+            }
+        });
+
         // Swiggly divider
         const divider = document.createElement('div');
         divider.className = "w-full overflow-hidden leading-none pt-0 pb-1";
@@ -150,14 +214,26 @@ class LexiconApp {
         `;
         main.appendChild(divider);
 
-        // Word Rows Container
+        // Content below the divider: either the normal word list, or the
+        // active test's matching grid / results screen.
         const rowContainer = document.createElement('div');
         rowContainer.id = 'word-row-container';
-        rowContainer.className = "space-y-6 pt-2";
+        rowContainer.className = "pt-2";
 
-        if (filtered.length === 0) {
+        if (this.testSession) {
+            const testContentEl = createTestContent(this.testSession, {
+                onTileClick: this.handleTestTileClick,
+                onRequestClose: this.handleRequestCloseTest,
+                onCancelDiscard: this.handleCancelDiscardTest,
+                onConfirmDiscard: this.handleConfirmDiscardTest,
+                onDone: this.handleRequestCloseTest,
+                onRetry: this.handleRetryTest
+            });
+            rowContainer.appendChild(testContentEl);
+        } else if (filtered.length === 0) {
             rowContainer.innerHTML = `<div class="p-12 text-center text-[#767676]"><p>No matching vocabulary words found.</p></div>`;
         } else {
+            rowContainer.className = "space-y-6 pt-2";
             filtered.forEach(item => {
                 const rowEl = createWordRow(
                     item, 
