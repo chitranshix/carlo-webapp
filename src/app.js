@@ -325,7 +325,7 @@ class LexiconApp {
         } else if (filtered.length === 0) {
             rowContainer.innerHTML = `<div class="p-12 text-center text-[#767676]"><p>No matching vocabulary words found.</p></div>`;
         } else {
-            rowContainer.className = "space-y-6 pt-2";
+            rowContainer.className = "space-y-3 pt-2";
             filtered.forEach(item => {
                 const rowEl = createWordRow(
                     item, 
