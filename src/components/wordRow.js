@@ -6,7 +6,7 @@ import { posBadge, statusIcon as statusIconSvg } from '../utils/vocabIcons.js';
 // uniform outline everywhere. Unseen still needs a thin edge since a
 // white card on a white page would otherwise disappear entirely.
 const CARD_STATUS_STYLE = {
-    Unseen: 'bg-white border border-stone-200',
+    Unseen: 'bg-white border border-[#DADAD3]',
     Learning: 'bg-amber-100 border-0',
     Mastered: 'bg-green-200 border-0'
 };

@@ -1,6 +1,6 @@
 export function createHeader(wordCount, searchValue) {
     const header = document.createElement('header');
-    header.className = "bg-stone-200 sticky top-0 z-30";
+    header.className = "bg-[#DADAD3] sticky top-0 z-30";
     header.innerHTML = `
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <h1 class="font-logo text-2xl text-[#111111] tracking-wide pt-1">Carlo</h1>

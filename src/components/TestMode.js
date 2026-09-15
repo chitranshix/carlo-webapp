@@ -131,7 +131,7 @@ function tileVisualState(session, side, id) {
     // The one tile state that still needs a real (thin) border - it's
     // white on a white page, so it needs some edge to read as a card at
     // all, the same reasoning as the browse list's Unseen cards.
-    return { classes: 'bg-white border border-stone-200 text-[#333333] hover:bg-stone-50 cursor-pointer shadow-xs', locked: false };
+    return { classes: 'bg-white border border-[#DADAD3] text-[#333333] hover:bg-stone-50 cursor-pointer shadow-xs', locked: false };
 }
 
 function renderResults(session, callbacks) {
@@ -145,9 +145,9 @@ function renderResults(session, callbacks) {
             <p class="text-xs uppercase tracking-wide text-[#767676] font-medium">Test complete</p>
             <p class="font-serif-gr font-bold text-3xl text-[#111111] mt-1">${correct} / ${total}</p>
         </div>
-        <div id="test-results-list" class="divide-y divide-stone-200 border-t border-b border-stone-200 mb-6"></div>
+        <div id="test-results-list" class="divide-y divide-[#DADAD3] border-t border-b border-[#DADAD3] mb-6"></div>
         <div class="flex items-center justify-center gap-3">
-            <button id="test-retry-btn" class="px-5 py-2.5 rounded-full bg-stone-100 text-sm font-medium text-[#333333] hover:bg-stone-200 transition cursor-pointer">Test again</button>
+            <button id="test-retry-btn" class="px-5 py-2.5 rounded-full bg-stone-100 text-sm font-medium text-[#333333] hover:bg-[#DADAD3] transition cursor-pointer">Test again</button>
             <button id="test-done-btn" class="px-5 py-2.5 rounded-full bg-[#111111] text-white text-sm font-medium hover:bg-black transition cursor-pointer">Done</button>
         </div>
     `;

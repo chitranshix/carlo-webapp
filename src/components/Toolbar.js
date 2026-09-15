@@ -20,7 +20,7 @@ export function createToolbar(state, counts, testProgress = null) {
             : 'bg-stone-100 text-[#333333] font-medium';
         const interactionClasses = filtersDisabled
             ? 'opacity-50 cursor-not-allowed'
-            : `${isActive ? 'hover:bg-blue-200' : 'hover:bg-stone-200'} cursor-pointer`;
+            : `${isActive ? 'hover:bg-blue-200' : 'hover:bg-[#DADAD3]'} cursor-pointer`;
         return `${colorClasses} ${interactionClasses}`;
     };
     const posBtnClasses = filterButtonClasses(state.pos !== 'all');
@@ -43,7 +43,7 @@ export function createToolbar(state, counts, testProgress = null) {
                     <span id="pos-selected-label">${formatPosLabel(state.pos)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div id="pos-menu-list" class="hidden absolute left-0 mt-1 w-52 bg-white border border-stone-200 rounded-2xl shadow-xl z-20 py-1.5 text-xs overflow-hidden">
+                <div id="pos-menu-list" class="hidden absolute left-0 mt-1 w-52 bg-white border border-[#DADAD3] rounded-2xl shadow-xl z-20 py-1.5 text-xs overflow-hidden">
                     <div class="px-3.5 py-2.5 hover:bg-stone-100 cursor-pointer font-medium flex items-center justify-between" data-value="all">
                         <span class="flex items-center space-x-2">
                             ${allIcon('w-3.5 h-3.5 text-[#767676]')}
@@ -89,7 +89,7 @@ export function createToolbar(state, counts, testProgress = null) {
                     <span id="status-selected-label">${formatStatusLabel(state.status)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </button>
-                <div id="status-menu-list" class="hidden absolute left-0 mt-1 w-48 bg-white border border-stone-200 rounded-2xl shadow-xl z-20 py-1.5 text-xs overflow-hidden">
+                <div id="status-menu-list" class="hidden absolute left-0 mt-1 w-48 bg-white border border-[#DADAD3] rounded-2xl shadow-xl z-20 py-1.5 text-xs overflow-hidden">
                     <div class="px-3.5 py-2.5 hover:bg-stone-100 cursor-pointer font-medium flex items-center justify-between" data-value="all">
                         <span class="flex items-center space-x-2">
                             ${allIcon('w-3.5 h-3.5 text-stone-500')}
@@ -124,18 +124,18 @@ export function createToolbar(state, counts, testProgress = null) {
 
         <div class="flex items-center space-x-3 text-xs text-[#767676]">
             <button id="test-mode-btn" title="${testProgress ? 'Click to view all words' : 'Click to start a test'}" class="flex items-center space-x-1.5 px-4 py-2.5 rounded-full transition select-none cursor-pointer font-medium ${testProgress
-                ? 'bg-stone-100 text-[#333333] hover:bg-stone-200'
+                ? 'bg-stone-100 text-[#333333] hover:bg-[#DADAD3]'
                 : 'bg-[#111111] text-white hover:bg-black'}">
                 ${testProgress
                     ? allIcon('w-4 h-4')
                     : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`}
                 <span>${testProgress ? 'All Words' : 'Test Mode'}</span>
             </button>
-            <button id="toggle-def-btn" title="${state.showDef && !state.showSentence ? 'Show sentences to hide definitions' : ''}" class="flex items-center space-x-1.5 bg-stone-100 px-4 py-2.5 rounded-full hover:bg-stone-200 transition select-none cursor-pointer text-[#333333] font-medium ${!state.showDef ? 'opacity-50' : ''}">
+            <button id="toggle-def-btn" title="${state.showDef && !state.showSentence ? 'Show sentences to hide definitions' : ''}" class="flex items-center space-x-1.5 bg-stone-100 px-4 py-2.5 rounded-full hover:bg-[#DADAD3] transition select-none cursor-pointer text-[#333333] font-medium ${!state.showDef ? 'opacity-50' : ''}">
                 <span>${eyeIcon(state.showDef, 'w-4 h-4 text-[#111111]')}</span>
                 <span>Definitions</span>
             </button>
-            <button id="toggle-sentence-btn" title="${state.showSentence && !state.showDef ? 'Show definitions to hide sentences' : ''}" class="flex items-center space-x-1.5 bg-stone-100 px-4 py-2.5 rounded-full hover:bg-stone-200 transition select-none cursor-pointer text-[#333333] font-medium ${!state.showSentence ? 'opacity-50' : ''}">
+            <button id="toggle-sentence-btn" title="${state.showSentence && !state.showDef ? 'Show definitions to hide sentences' : ''}" class="flex items-center space-x-1.5 bg-stone-100 px-4 py-2.5 rounded-full hover:bg-[#DADAD3] transition select-none cursor-pointer text-[#333333] font-medium ${!state.showSentence ? 'opacity-50' : ''}">
                 <span>${eyeIcon(state.showSentence, 'w-4 h-4 text-[#111111]')}</span>
                 <span>Sentences</span>
             </button>
