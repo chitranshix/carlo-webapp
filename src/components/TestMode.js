@@ -2,7 +2,7 @@ import { isSessionComplete, getScore, statusForResult } from '../services/testSe
 import { posBadge, statusIcon } from '../utils/vocabIcons.js';
 
 const STATUS_META = {
-    Unseen: { label: 'Unseen', color: 'text-gray-400', icon: statusIcon('Unseen', 'w-4 h-4 text-gray-400') },
+    Unseen: { label: 'Unseen', color: 'text-stone-400', icon: statusIcon('Unseen', 'w-4 h-4 text-stone-400') },
     Learning: { label: 'Learning', color: 'text-amber-600', icon: statusIcon('Learning', 'w-4 h-4 text-amber-600') },
     Mastered: { label: 'Mastered', color: 'text-green-600', icon: statusIcon('Mastered', 'w-4 h-4 text-green-600') }
 };
@@ -55,13 +55,13 @@ function renderWordTile(item, session, callbacks) {
     // invalid HTML), so this is a div with its own click-to-select handling
     // - including the keyboard access a real button gets for free.
     const tile = document.createElement('div');
-    tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none flex items-center justify-between gap-2 ${classes}`;
+    tile.className = `w-full text-left px-5 py-4 rounded-2xl border transition select-none flex items-center justify-between gap-2 ${classes}`;
     tile.innerHTML = `
         <span class="flex items-center min-w-0">
             <span class="font-serif-gr font-bold text-sm truncate">${item.word}</span>
             <span class="ml-3">${posBadge(item.pos)}</span>
         </span>
-        <button type="button" data-action="audio" title="Pronounce Word" class="shrink-0 p-1 rounded hover:bg-black/5 transition cursor-pointer">
+        <button type="button" data-action="audio" title="Pronounce Word" class="shrink-0 p-1.5 rounded-full hover:bg-black/5 transition cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
         </button>
     `;
@@ -99,7 +99,7 @@ function renderCardTile(item, session, callbacks) {
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.disabled = locked;
-    tile.className = `w-full text-left px-4 py-3 rounded-lg border transition select-none ${classes}`;
+    tile.className = `w-full text-left px-5 py-4 rounded-2xl border transition select-none ${classes}`;
     tile.innerHTML = `
         <p class="text-sm ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
         <p class="text-sm italic mt-2 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${redactWord(item.word, item.sentence) || ''}</p>
@@ -115,20 +115,23 @@ function tileVisualState(session, side, id) {
     const selected = session.selected && session.selected.side === side && session.selected.id === id;
 
     if (result === 'correct') {
-        return { classes: 'bg-green-100 border-green-400 text-green-800 cursor-default', locked: true };
+        // Fill carries the meaning now, not a border - a bolder green fill
+        // reads as "resolved and correct" without needing an outline.
+        return { classes: 'bg-green-200 border-0 text-green-800 cursor-default', locked: true };
     }
     if (result === 'wrong') {
-        // No opacity dampening here (unlike before) - a lighter wrong tile
-        // would fight against the point of making it darker/more visible.
-        return { classes: 'bg-red-100 border-red-400 text-red-700 cursor-default', locked: true };
+        return { classes: 'bg-red-200 border-0 text-red-700 cursor-default', locked: true };
     }
     if (result === 'skipped') {
-        return { classes: 'bg-gray-50 border-gray-200 text-gray-400 cursor-default opacity-70', locked: true };
+        return { classes: 'bg-stone-50 border-0 text-stone-400 cursor-default opacity-70', locked: true };
     }
     if (selected) {
         return { classes: 'bg-white border-[#111111] ring-2 ring-[#111111] text-[#111111] cursor-pointer', locked: false };
     }
-    return { classes: 'bg-white border-[#E1E1E1] text-[#333333] hover:bg-gray-50 cursor-pointer shadow-xs', locked: false };
+    // The one tile state that still needs a real (thin) border - it's
+    // white on a white page, so it needs some edge to read as a card at
+    // all, the same reasoning as the browse list's Unseen cards.
+    return { classes: 'bg-white border border-stone-200 text-[#333333] hover:bg-stone-50 cursor-pointer shadow-xs', locked: false };
 }
 
 function renderResults(session, callbacks) {
@@ -142,10 +145,10 @@ function renderResults(session, callbacks) {
             <p class="text-xs uppercase tracking-wide text-[#767676] font-medium">Test complete</p>
             <p class="font-serif-gr font-bold text-3xl text-[#111111] mt-1">${correct} / ${total}</p>
         </div>
-        <div id="test-results-list" class="divide-y divide-[#E1E1E1] border-t border-b border-[#E1E1E1] mb-6"></div>
+        <div id="test-results-list" class="divide-y divide-stone-200 border-t border-b border-stone-200 mb-6"></div>
         <div class="flex items-center justify-center gap-3">
-            <button id="test-retry-btn" class="px-4 py-2 rounded-lg border border-[#E1E1E1] text-sm font-medium text-[#333333] hover:bg-gray-50 transition cursor-pointer">Test again</button>
-            <button id="test-done-btn" class="px-4 py-2 rounded-lg bg-[#111111] text-white text-sm font-medium hover:bg-black transition cursor-pointer">Done</button>
+            <button id="test-retry-btn" class="px-5 py-2.5 rounded-full bg-stone-100 text-sm font-medium text-[#333333] hover:bg-stone-200 transition cursor-pointer">Test again</button>
+            <button id="test-done-btn" class="px-5 py-2.5 rounded-full bg-[#111111] text-white text-sm font-medium hover:bg-black transition cursor-pointer">Done</button>
         </div>
     `;
 
@@ -168,7 +171,7 @@ function renderResultRow(item, result, oldStatus, newStatus) {
 
     const changed = oldStatus !== newStatus;
     const resultLabel = result === 'correct' ? 'Correct' : result === 'wrong' ? 'Missed' : 'Skipped';
-    const resultColor = result === 'correct' ? 'text-green-600' : result === 'wrong' ? 'text-red-500' : 'text-gray-400';
+    const resultColor = result === 'correct' ? 'text-green-600' : result === 'wrong' ? 'text-red-500' : 'text-stone-400';
 
     row.innerHTML = `
         <div class="flex items-center gap-2 min-w-0">
@@ -177,7 +180,7 @@ function renderResultRow(item, result, oldStatus, newStatus) {
         </div>
         <div class="flex items-center gap-2 shrink-0">
             ${STATUS_META[oldStatus].icon}
-            ${changed ? '<svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>' + STATUS_META[newStatus].icon : ''}
+            ${changed ? '<svg class="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>' + STATUS_META[newStatus].icon : ''}
         </div>
     `;
     return row;
@@ -189,12 +192,12 @@ function renderExitConfirm(callbacks) {
     const wrap = document.createElement('div');
     wrap.className = "fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4";
     wrap.innerHTML = `
-        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
+        <div class="bg-white rounded-2xl shadow-2xl p-7 max-w-sm w-full">
             <p class="font-serif-gr font-bold text-base text-[#111111] mb-1.5">End test now?</p>
             <p class="text-sm text-[#767676] mb-5">Your progress on this test won't be saved.</p>
             <div class="flex justify-end gap-2">
-                <button id="test-cancel-discard-btn" class="px-3.5 py-2 rounded-lg text-sm font-medium text-[#333333] hover:bg-gray-100 transition cursor-pointer">Cancel</button>
-                <button id="test-confirm-discard-btn" class="px-3.5 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition cursor-pointer">Discard &amp; exit</button>
+                <button id="test-cancel-discard-btn" class="px-4 py-2.5 rounded-full text-sm font-medium text-[#333333] hover:bg-stone-100 transition cursor-pointer">Cancel</button>
+                <button id="test-confirm-discard-btn" class="px-4 py-2.5 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition cursor-pointer">Discard &amp; exit</button>
             </div>
         </div>
     `;

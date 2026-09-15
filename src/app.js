@@ -293,21 +293,14 @@ class LexiconApp {
             }
         });
 
-        // Swiggly divider
-        const divider = document.createElement('div');
-        divider.className = "w-full overflow-hidden leading-none pt-0 pb-1";
-        divider.innerHTML = `
-            <svg class="w-full h-4 text-[#E1E1E1]" viewBox="0 0 1200 20" fill="none" preserveAspectRatio="none">
-                <path d="M0,10 Q12.5,0 25,10 T50,10 T75,10 T100,10 T125,10 T150,10 T175,10 T200,10 T225,10 T250,10 T275,10 T300,10 T325,10 T350,10 T375,10 T400,10 T425,10 T450,10 T475,10 T500,10 T525,10 T550,10 T575,10 T600,10 T625,10 T650,10 T675,10 T700,10 T725,10 T750,10 T775,10 T800,10 T825,10 T850,10 T875,10 T900,10 T925,10 T950,10 T975,10 T1000,10 T1025,10 T1050,10 T1075,10 T1100,10 T1125,10 T1150,10 T1175,10 T1200,10" stroke="currentColor" stroke-width="1.2" fill="none"/>
-            </svg>
-        `;
-        main.appendChild(divider);
-
-        // Content below the divider: either the normal word list, or the
-        // active test's matching grid / results screen.
+        // Content below the toolbar: either the normal word list, or the
+        // active test's matching grid / results screen. Separation from the
+        // toolbar above is whitespace only now (no divider line) - matching
+        // how the rest of the page already lets color/spacing do the
+        // separating instead of drawn lines.
         const rowContainer = document.createElement('div');
         rowContainer.id = 'word-row-container';
-        rowContainer.className = "pt-2";
+        rowContainer.className = "pt-6";
 
         if (this.testSession) {
             const testContentEl = createTestContent(this.testSession, {
@@ -325,7 +318,7 @@ class LexiconApp {
         } else if (filtered.length === 0) {
             rowContainer.innerHTML = `<div class="p-12 text-center text-[#767676]"><p>No matching vocabulary words found.</p></div>`;
         } else {
-            rowContainer.className = "space-y-3 pt-2";
+            rowContainer.className = "space-y-4 pt-6";
             filtered.forEach(item => {
                 const rowEl = createWordRow(
                     item, 
