@@ -121,12 +121,14 @@ function tileVisualState(session, side, id) {
     const selected = session.selected && session.selected.side === side && session.selected.id === id;
 
     if (result === 'correct') {
-        // Fill carries the meaning now, not a border - a bolder green fill
+        // Fill carries the meaning now, not a border - a bolder lime fill
         // reads as "resolved and correct" without needing an outline.
         return { classes: 'bg-lime-200 border-0 text-lime-800 cursor-default', locked: true };
     }
     if (result === 'wrong') {
-        return { classes: 'bg-red-200 border-0 text-red-700 cursor-default', locked: true };
+        // rose, not red - a themed status color like the lime above, not
+        // the destructive-action red used for "Discard & exit" below.
+        return { classes: 'bg-rose-200 border-0 text-rose-700 cursor-default', locked: true };
     }
     if (result === 'skipped') {
         return { classes: 'bg-stone-50 border-0 text-stone-400 cursor-default opacity-70', locked: true };
@@ -177,7 +179,7 @@ function renderResultRow(item, result, oldStatus, newStatus) {
 
     const changed = oldStatus !== newStatus;
     const resultLabel = result === 'correct' ? 'Correct' : result === 'wrong' ? 'Missed' : 'Skipped';
-    const resultColor = result === 'correct' ? 'text-lime-600' : result === 'wrong' ? 'text-red-500' : 'text-stone-400';
+    const resultColor = result === 'correct' ? 'text-lime-600' : result === 'wrong' ? 'text-rose-500' : 'text-stone-400';
 
     row.innerHTML = `
         <div class="flex items-center gap-2 min-w-0">
