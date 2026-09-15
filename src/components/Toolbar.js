@@ -15,12 +15,19 @@ export function createToolbar(state, counts, testProgress = null) {
     // Pinterest-style filled chips instead of outlined buttons - the fill
     // color itself signals active/inactive, no border needed.
     const filterButtonClasses = (isActive) => {
+        // A noticeably darker warm-neutral fill for "active" - enough
+        // contrast against the default stone-100 chip to spot at a glance,
+        // without going full solid black. That treatment is reserved for
+        // the one true primary action (the Test Mode button); using it
+        // here too made every filter toggle compete for the same visual
+        // weight. Blue was ruled out earlier as the one cool-toned color
+        // in an otherwise entirely warm palette.
         const colorClasses = isActive
-            ? 'bg-blue-100 text-blue-700 font-semibold'
+            ? 'bg-stone-300 text-[#111111] font-semibold'
             : 'bg-stone-100 text-[#333333] font-medium';
         const interactionClasses = filtersDisabled
             ? 'opacity-50 cursor-not-allowed'
-            : `${isActive ? 'hover:bg-blue-200' : 'hover:bg-[#DADAD3]'} cursor-pointer`;
+            : `${isActive ? 'hover:bg-stone-400' : 'hover:bg-[#DADAD3]'} cursor-pointer`;
         return `${colorClasses} ${interactionClasses}`;
     };
     const posBtnClasses = filterButtonClasses(state.pos !== 'all');
@@ -113,7 +120,7 @@ export function createToolbar(state, counts, testProgress = null) {
                     </div>
                     <div class="px-3.5 py-2.5 hover:bg-stone-100 cursor-pointer flex items-center justify-between" data-value="Mastered">
                         <span class="flex items-center space-x-2">
-                            ${statusIcon('Mastered', 'w-3.5 h-3.5 text-green-600')}
+                            ${statusIcon('Mastered', 'w-3.5 h-3.5 text-lime-600')}
                             <span>Mastered</span>
                         </span>
                         <span class="text-stone-400">${counts.status.Mastered}</span>

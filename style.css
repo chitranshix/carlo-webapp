@@ -1,14 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=PT+Serif:ital,wght@1,700&display=swap');
 
-/* Word titles and the logo previously used custom serif/script fonts
-   (Merriweather, Playwrite Hrvatska Lijeva) once this stylesheet actually
-   started loading - reverted per feedback in favor of the same sans-serif
-   as the rest of the UI. Left as no-ops rather than stripping the classes
-   out of every component that references them. */
+/* Word titles previously used a custom serif font (Merriweather) once this
+   stylesheet actually started loading - reverted per feedback in favor of
+   the same sans-serif as the rest of the UI. Left as a no-op rather than
+   stripping the class out of every component that references it. */
 .font-serif-gr {
 }
 
+/* Just the "Carlo" wordmark gets a distinct accent font - bold italic PT
+   Serif - unlike the earlier attempt this doesn't touch body/content text
+   anywhere, so it's a small brand accent rather than a page-wide change. */
 .font-logo {
+    font-family: 'PT Serif', serif;
+    font-style: italic;
+    font-weight: 700;
 }
 
 body {

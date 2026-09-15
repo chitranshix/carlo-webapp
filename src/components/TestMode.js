@@ -4,7 +4,7 @@ import { posBadge, statusIcon } from '../utils/vocabIcons.js';
 const STATUS_META = {
     Unseen: { label: 'Unseen', color: 'text-stone-400', icon: statusIcon('Unseen', 'w-4 h-4 text-stone-400') },
     Learning: { label: 'Learning', color: 'text-amber-600', icon: statusIcon('Learning', 'w-4 h-4 text-amber-600') },
-    Mastered: { label: 'Mastered', color: 'text-green-600', icon: statusIcon('Mastered', 'w-4 h-4 text-green-600') }
+    Mastered: { label: 'Mastered', color: 'text-lime-600', icon: statusIcon('Mastered', 'w-4 h-4 text-lime-600') }
 };
 
 /**
@@ -38,7 +38,13 @@ function renderMatching(session, callbacks) {
     // column can stay narrow (1fr) while the definition/sentence card,
     // which carries far more text and wraps to multiple lines, gets twice
     // the space (2fr) to cut down on wrapping.
-    wrap.className = "grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-x-6 gap-y-2";
+    // Always 2 columns, even on mobile - this is a matching game, so words
+    // and definitions both need to be visible at once to compare against
+    // each other. Collapsing to a single column (word0, card0, word1,
+    // card1... stacked) either misleads (looks like matched pairs) or,
+    // when reordered to avoid that, forces scrolling back and forth to
+    // compare - narrower columns are the right tradeoff, not one column.
+    wrap.className = "grid grid-cols-[1fr_2fr] gap-x-3 sm:gap-x-6 gap-y-2";
 
     session.wordOrder.forEach((wordId, i) => {
         const cardId = session.cardOrder[i];
@@ -55,7 +61,7 @@ function renderWordTile(item, session, callbacks) {
     // invalid HTML), so this is a div with its own click-to-select handling
     // - including the keyboard access a real button gets for free.
     const tile = document.createElement('div');
-    tile.className = `w-full text-left px-5 py-4 rounded-2xl border transition select-none flex items-center justify-between gap-2 ${classes}`;
+    tile.className = `w-full text-left px-3 py-3 sm:px-5 sm:py-4 rounded-2xl border transition select-none flex items-center justify-between gap-2 ${classes}`;
     tile.innerHTML = `
         <span class="flex items-center min-w-0">
             <span class="font-serif-gr font-bold text-sm truncate">${item.word}</span>
@@ -99,7 +105,7 @@ function renderCardTile(item, session, callbacks) {
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.disabled = locked;
-    tile.className = `w-full text-left px-5 py-4 rounded-2xl border transition select-none ${classes}`;
+    tile.className = `w-full text-left px-3 py-3 sm:px-5 sm:py-4 rounded-2xl border transition select-none ${classes}`;
     tile.innerHTML = `
         <p class="text-sm ${showDef ? '' : 'blur-sm select-none'} transition-all duration-200">${item.definition}</p>
         <p class="text-sm italic mt-2 opacity-70 ${showSentence ? '' : 'blur-sm select-none'} transition-all duration-200">${redactWord(item.word, item.sentence) || ''}</p>
@@ -117,7 +123,7 @@ function tileVisualState(session, side, id) {
     if (result === 'correct') {
         // Fill carries the meaning now, not a border - a bolder green fill
         // reads as "resolved and correct" without needing an outline.
-        return { classes: 'bg-green-200 border-0 text-green-800 cursor-default', locked: true };
+        return { classes: 'bg-lime-200 border-0 text-lime-800 cursor-default', locked: true };
     }
     if (result === 'wrong') {
         return { classes: 'bg-red-200 border-0 text-red-700 cursor-default', locked: true };
@@ -171,7 +177,7 @@ function renderResultRow(item, result, oldStatus, newStatus) {
 
     const changed = oldStatus !== newStatus;
     const resultLabel = result === 'correct' ? 'Correct' : result === 'wrong' ? 'Missed' : 'Skipped';
-    const resultColor = result === 'correct' ? 'text-green-600' : result === 'wrong' ? 'text-red-500' : 'text-stone-400';
+    const resultColor = result === 'correct' ? 'text-lime-600' : result === 'wrong' ? 'text-red-500' : 'text-stone-400';
 
     row.innerHTML = `
         <div class="flex items-center gap-2 min-w-0">
