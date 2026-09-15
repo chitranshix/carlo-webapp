@@ -33,10 +33,12 @@ function renderMatching(session, callbacks) {
     // manual height math needed. This is purely a visual pairing: wordOrder
     // and cardOrder are still shuffled independently, so which word sits
     // next to which card gives no hint about which ones actually match.
-    // The two columns aren't equal width - a word tile only needs to fit a
-    // word, a pos badge, and an icon, while the definition/sentence card
-    // carries far more text, so it gets more of the row (a 2:3 split).
-    wrap.className = "grid grid-cols-1 sm:grid-cols-[2fr_3fr] gap-x-6 gap-y-2";
+    // The two columns aren't equal width - even a long word (~16 chars)
+    // plus its pos badge and audio icon only needs ~250px, so the word
+    // column can stay narrow (1fr) while the definition/sentence card,
+    // which carries far more text and wraps to multiple lines, gets twice
+    // the space (2fr) to cut down on wrapping.
+    wrap.className = "grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-x-6 gap-y-2";
 
     session.wordOrder.forEach((wordId, i) => {
         const cardId = session.cardOrder[i];
