@@ -1,34 +1,25 @@
 import { posBadge, allIcon, statusIcon, eyeIcon } from '../utils/vocabIcons.js';
 
-export function createToolbar(state, counts, testProgress = null) {
-    const filtersDisabled = !!testProgress;
-    const filtersDisabledAttrs = filtersDisabled
-        ? `disabled title="Filters are locked during a test - exit or finish the test to change them"`
-        : '';
-
+export function createToolbar(state, counts) {
     // A filter button gets its own "active" chip color whenever it's
     // narrowed away from "all", so it's obvious at a glance which filters
     // are currently applied - not just visible in the (easy-to-miss) label
-    // text. The locked-during-test dimming layers on top of whichever
-    // color it already has, so you can still see what's active while it's
-    // locked, just greyed down.
+    // text.
     // Pinterest-style filled chips instead of outlined buttons - the fill
     // color itself signals active/inactive, no border needed.
     const filterButtonClasses = (isActive) => {
         // A noticeably darker warm-neutral fill for "active" - enough
         // contrast against the default stone-100 chip to spot at a glance,
         // without going full solid black. That treatment is reserved for
-        // the one true primary action (the Test Mode button); using it
+        // the one true primary action (the Practice button); using it
         // here too made every filter toggle compete for the same visual
         // weight. Blue was ruled out earlier as the one cool-toned color
         // in an otherwise entirely warm palette.
         const colorClasses = isActive
             ? 'bg-stone-300 text-[#111111] font-semibold'
             : 'bg-stone-100 text-[#333333] font-medium';
-        const interactionClasses = filtersDisabled
-            ? 'opacity-50 cursor-not-allowed'
-            : `${isActive ? 'hover:bg-stone-400' : 'hover:bg-[#DADAD3]'} cursor-pointer`;
-        return `${colorClasses} ${interactionClasses}`;
+        const interactionClasses = isActive ? 'hover:bg-stone-400' : 'hover:bg-[#DADAD3]';
+        return `${colorClasses} ${interactionClasses} cursor-pointer`;
     };
     const posBtnClasses = filterButtonClasses(state.pos !== 'all');
     const statusBtnClasses = filterButtonClasses(state.status !== 'all');
@@ -45,7 +36,7 @@ export function createToolbar(state, counts, testProgress = null) {
         <div class="flex flex-wrap items-center gap-3 text-sm">
             <!-- Custom Part of Speech Dropdown -->
             <div class="relative" id="pos-dropdown-container">
-                <button id="pos-menu-btn" ${filtersDisabledAttrs} class="px-4 py-2.5 rounded-full text-xs flex items-center space-x-2 transition select-none ${posBtnClasses}">
+                <button id="pos-menu-btn" class="px-4 py-2.5 rounded-full text-xs flex items-center space-x-2 transition select-none ${posBtnClasses}">
                     ${posButtonIcon}
                     <span id="pos-selected-label">${formatPosLabel(state.pos)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -91,7 +82,7 @@ export function createToolbar(state, counts, testProgress = null) {
 
             <!-- Custom Status Dropdown -->
             <div class="relative" id="status-dropdown-container">
-                <button id="status-menu-btn" ${filtersDisabledAttrs} class="px-4 py-2.5 rounded-full text-xs flex items-center space-x-2 transition select-none ${statusBtnClasses}">
+                <button id="status-menu-btn" class="px-4 py-2.5 rounded-full text-xs flex items-center space-x-2 transition select-none ${statusBtnClasses}">
                     ${statusButtonIcon}
                     <span id="status-selected-label">${formatStatusLabel(state.status)}</span>
                     <svg class="w-3.5 h-3.5 text-[#767676] transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -130,14 +121,6 @@ export function createToolbar(state, counts, testProgress = null) {
         </div>
 
         <div class="flex items-center space-x-3 text-xs text-[#767676]">
-            <button id="test-mode-btn" title="${testProgress ? 'Click to view all words' : 'Click to start a test'}" class="flex items-center space-x-1.5 px-4 py-2.5 rounded-full transition select-none cursor-pointer font-medium ${testProgress
-                ? 'bg-stone-100 text-[#333333] hover:bg-[#DADAD3]'
-                : 'bg-[#111111] text-white hover:bg-black'}">
-                ${testProgress
-                    ? allIcon('w-4 h-4')
-                    : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`}
-                <span>${testProgress ? 'All Words' : 'Test Mode'}</span>
-            </button>
             <button id="toggle-def-btn" title="${state.showDef && !state.showSentence ? 'Show sentences to hide definitions' : ''}" class="flex items-center space-x-1.5 bg-stone-100 px-4 py-2.5 rounded-full hover:bg-[#DADAD3] transition select-none cursor-pointer text-[#333333] font-medium ${!state.showDef ? 'opacity-50' : ''}">
                 <span>${eyeIcon(state.showDef, 'w-4 h-4 text-[#111111]')}</span>
                 <span>Definitions</span>

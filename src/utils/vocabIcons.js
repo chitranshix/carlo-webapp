@@ -40,6 +40,13 @@ export function statusIcon(status, svgClasses = 'w-3.5 h-3.5') {
     return allIcon(svgClasses); // 'all'
 }
 
+// A plain X, used wherever a panel/overlay needs a close affordance (the
+// header's hamburger flips to this while the All Words drawer is open; the
+// drawer's own header uses it too).
+export function closeIcon(svgClasses = 'w-4 h-4') {
+    return `<svg class="${svgClasses}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+}
+
 // Open/closed eye for the Definitions and Sentences visibility toggles.
 export function eyeIcon(isOpen, svgClasses = 'w-4 h-4') {
     if (isOpen) {

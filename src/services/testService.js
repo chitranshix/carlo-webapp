@@ -10,16 +10,16 @@ export function shuffleArray(arr) {
     return copy;
 }
 
-export function pickRandomWords(vocabList, count = 5) {
+export function pickRandomWords(vocabList, count = 4) {
     return shuffleArray(vocabList).slice(0, count);
 }
 
 /**
- * Creates a fresh test session: 5 random words, with the word list and the
- * definition/sentence cards independently shuffled so LHS/RHS positions
- * don't line up.
+ * Creates a fresh test session: a batch of random words, with the word list
+ * and the definition/sentence cards independently shuffled so LHS/RHS
+ * positions don't line up.
  */
-export function createTestSession(vocabList, count = 5) {
+export function createTestSession(vocabList, count = 4) {
     const items = pickRandomWords(vocabList, count).map(item => ({
         id: item.id,
         word: item.word,
@@ -34,8 +34,7 @@ export function createTestSession(vocabList, count = 5) {
         wordOrder: shuffleArray(items.map(i => i.id)),
         cardOrder: shuffleArray(items.map(i => i.id)),
         selected: null,       // { side: 'word' | 'card', id } - the tile awaiting a partner
-        results: {},          // id -> 'correct' | 'wrong' | 'skipped'
-        confirmingExit: false
+        results: {}           // id -> 'correct' | 'wrong' | 'skipped'
     };
 }
 

@@ -16,11 +16,7 @@ export function createTestContent(session, callbacks) {
     const wrap = document.createElement('div');
 
     const complete = isSessionComplete(session);
-    wrap.appendChild(complete ? renderResults(session, callbacks) : renderMatching(session, callbacks));
-
-    if (session.confirmingExit) {
-        wrap.appendChild(renderExitConfirm(callbacks));
-    }
+    wrap.appendChild(complete ? renderResults(session) : renderMatching(session, callbacks));
 
     return wrap;
 }
@@ -142,7 +138,7 @@ function tileVisualState(session, side, id) {
     return { classes: 'bg-white border border-[#DADAD3] text-[#333333] hover:bg-stone-50 cursor-pointer shadow-xs', locked: false };
 }
 
-function renderResults(session, callbacks) {
+function renderResults(session) {
     const { correct, total } = getScore(session);
 
     const wrap = document.createElement('div');
@@ -150,14 +146,11 @@ function renderResults(session, callbacks) {
 
     wrap.innerHTML = `
         <div class="text-center mb-6">
-            <p class="text-xs uppercase tracking-wide text-[#767676] font-medium">Test complete</p>
+            <p class="text-xs uppercase tracking-wide text-[#767676] font-medium">Round complete</p>
             <p class="font-serif-gr font-bold text-3xl text-[#111111] mt-1">${correct} / ${total}</p>
         </div>
-        <div id="test-results-list" class="divide-y divide-[#DADAD3] border-t border-b border-[#DADAD3] mb-6"></div>
-        <div class="flex items-center justify-center gap-3">
-            <button id="test-retry-btn" class="px-5 py-2.5 rounded-full bg-stone-100 text-sm font-medium text-[#333333] hover:bg-[#DADAD3] transition cursor-pointer">Test again</button>
-            <button id="test-done-btn" class="px-5 py-2.5 rounded-full bg-[#111111] text-white text-sm font-medium hover:bg-black transition cursor-pointer">Done</button>
-        </div>
+        <div id="test-results-list" class="divide-y divide-[#DADAD3] border-t border-b border-[#DADAD3]"></div>
+        <p class="text-xs text-center text-[#767676] mt-4">Next round starting...</p>
     `;
 
     const list = wrap.querySelector('#test-results-list');
@@ -166,9 +159,6 @@ function renderResults(session, callbacks) {
         const newStatus = statusForResult(result, item.originalStatus);
         list.appendChild(renderResultRow(item, result, item.originalStatus, newStatus));
     });
-
-    wrap.querySelector('#test-retry-btn')?.addEventListener('click', callbacks.onRetry);
-    wrap.querySelector('#test-done-btn')?.addEventListener('click', callbacks.onDone);
 
     return wrap;
 }
@@ -192,26 +182,6 @@ function renderResultRow(item, result, oldStatus, newStatus) {
         </div>
     `;
     return row;
-}
-
-// The one intentional overlay left: a small blocking confirmation before a
-// destructive action (discarding progress).
-function renderExitConfirm(callbacks) {
-    const wrap = document.createElement('div');
-    wrap.className = "fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4";
-    wrap.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl p-7 max-w-sm w-full">
-            <p class="font-serif-gr font-bold text-base text-[#111111] mb-1.5">End test now?</p>
-            <p class="text-sm text-[#767676] mb-5">Your progress on this test won't be saved.</p>
-            <div class="flex justify-end gap-2">
-                <button id="test-cancel-discard-btn" class="px-4 py-2.5 rounded-full text-sm font-medium text-[#333333] hover:bg-stone-100 transition cursor-pointer">Cancel</button>
-                <button id="test-confirm-discard-btn" class="px-4 py-2.5 rounded-full bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition cursor-pointer">Discard &amp; exit</button>
-            </div>
-        </div>
-    `;
-    wrap.querySelector('#test-cancel-discard-btn')?.addEventListener('click', callbacks.onCancelDiscard);
-    wrap.querySelector('#test-confirm-discard-btn')?.addEventListener('click', callbacks.onConfirmDiscard);
-    return wrap;
 }
 
 function findItem(session, id) {

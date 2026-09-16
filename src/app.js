@@ -4,8 +4,16 @@ import { createTestSession, handleTileClick, isSessionComplete, statusForResult,
 import { loadPersistedState, savePersistedState, recordTestCompletion } from './services/persistenceService.js';
 import { createHeader } from './components/Header.js';
 import { createToolbar } from './components/Toolbar.js';
-import { createWordRow } from './components/wordRow.js';
 import { createTestContent } from './components/TestMode.js';
+import { createAllWordsDrawer } from './components/AllWordsDrawer.js';
+
+// How long the round-complete summary stays up before the next round
+// auto-starts - long enough to read a score and skim which words changed
+// status, short enough that the loop still feels continuous.
+const NEXT_ROUND_DELAY_MS = 2000;
+
+// Words per round.
+const ROUND_SIZE = 4;
 
 class LexiconApp {
     constructor(rootElementId) {
@@ -28,22 +36,27 @@ class LexiconApp {
             if (savedStatus) item.status = savedStatus;
         });
 
-        // Test Mode is the app's default screen now, not an opt-in extra -
-        // start with a live test session instead of the browse list. Safe
-        // to call getTestPool() here since this.state/this.vocabList are
-        // already set above; it just won't have <2 words on a fresh load.
-        // An in-progress session saved before a refresh takes priority over
-        // starting a new one, so a reload resumes exactly where you left
-        // off; confirmingExit is reset to false either way since a modal
-        // reappearing on its own after a refresh would be surprising.
+        // The practice loop is the app's only screen - always mounted, never
+        // torn down. An in-progress round saved before a refresh takes
+        // priority over starting a new one, so a reload resumes exactly
+        // where you left off.
         if (this.persisted.activeSession) {
-            this.testSession = { ...this.persisted.activeSession, confirmingExit: false };
+            this.testSession = this.persisted.activeSession;
         } else {
-            this.testSession = createTestSession(this.getTestPool(), 5);
+            this.testSession = createTestSession(this.getTestPool(), ROUND_SIZE);
             this.setActiveSession(this.testSession);
         }
 
-        // The browse list's row set is a snapshot, not a live query - it's
+        // Whether the All Words drawer is showing. It's an overlay on top
+        // of the loop, not a separate screen - the loop is never torn down
+        // while it's open, so there's nothing to confirm or lose either way.
+        this.allWordsOpen = false;
+        // Timer id for the "next round starts automatically" delay after a
+        // round completes - tracked so it can be cancelled (and resumed
+        // later) if the drawer opens during the countdown.
+        this.nextRoundTimeoutId = null;
+
+        // The drawer's row set is a snapshot, not a live query - it's
         // recomputed whenever search/pos/status actually changes (see the
         // handlers below), but NOT just because a status toggle made an
         // item stop matching. Otherwise, toggling a word's status while a
@@ -86,9 +99,8 @@ class LexiconApp {
         savePersistedState(this.persisted);
     }
 
-    // Saves (or clears) the live test session so a refresh mid-test can
-    // resume it. confirmingExit is deliberately dropped - it's transient
-    // UI state, not something that should reappear after a reload.
+    // Saves (or clears) the live test session so a refresh mid-round can
+    // resume it.
     setActiveSession(session) {
         this.persisted.activeSession = session
             ? { items: session.items, wordOrder: session.wordOrder, cardOrder: session.cardOrder, selected: session.selected, results: session.results }
@@ -96,20 +108,22 @@ class LexiconApp {
         this.persist();
     }
 
-    handleStartTest = () => {
+    // Starts a fresh round - either the very next one in the loop, or the
+    // auto-advance after one completes.
+    startRound = () => {
         const pool = this.getTestPool();
         if (pool.length < 2) {
-            this.showToast("Not enough words match the current filters to start a test - try widening them.");
+            this.showToast("Not enough words match the current filters to start a round - try widening them.");
             return;
         }
-        this.testSession = createTestSession(pool, Math.min(5, pool.length));
+        this.testSession = createTestSession(pool, Math.min(ROUND_SIZE, pool.length));
         this.setActiveSession(this.testSession);
         this.render();
     }
 
     // A small dismissible banner instead of a native alert() - stays
-    // consistent with the rest of the app's custom-styled UI (the
-    // exit-confirmation dialog, the toolbar, etc. are all custom too).
+    // consistent with the rest of the app's custom-styled UI (the toolbar's
+    // dropdowns, etc. are all custom too).
     showToast(message, duration = 3500) {
         if (this.toastTimeoutId) clearTimeout(this.toastTimeoutId);
         this.toast = message;
@@ -119,13 +133,6 @@ class LexiconApp {
             this.toastTimeoutId = null;
             this.render();
         }, duration);
-    }
-
-    handleRetryTest = () => {
-        const pool = this.getTestPool();
-        this.testSession = createTestSession(pool, Math.min(5, pool.length));
-        this.setActiveSession(this.testSession);
-        this.render();
     }
 
     // The pool Test Mode draws from is just the current search/pos/status
@@ -169,40 +176,32 @@ class LexiconApp {
         // left to resume, so it's no longer an "active" session to save.
         this.persisted.activeSession = null;
         this.persist();
+
+        // Duolingo-style: don't wait for a click, just keep going. The brief
+        // delay lets the round-complete summary actually be read before the
+        // next round replaces it.
+        this.nextRoundTimeoutId = setTimeout(() => {
+            this.nextRoundTimeoutId = null;
+            this.startRound();
+        }, NEXT_ROUND_DELAY_MS);
     }
 
-    handleRequestCloseTest = () => {
-        if (!this.testSession) return;
-        const hasAnsweredAnything = Object.keys(this.testSession.results).length > 0;
-        if (isSessionComplete(this.testSession)) {
-            // Results are already applied to vocabList - just close. A
-            // completed test can change several statuses at once, so the
-            // browse list's snapshot is refreshed here rather than kept
-            // stale from before the test started.
-            this.testSession = null;
-            this.visibleWords = this.getFilteredData();
-        } else if (hasAnsweredAnything) {
-            // Only warn about losing progress if there's actually progress
-            // to lose - otherwise (e.g. landing on the default test screen
-            // and immediately clicking away) this dialog would fire before
-            // the user has done anything at all.
-            this.testSession.confirmingExit = true;
-        } else {
-            this.testSession = null;
-            this.setActiveSession(null);
+    // Opens or closes the All Words drawer. Non-destructive either way - the
+    // loop underneath is never torn down, so there's nothing to confirm.
+    // Opening pauses the post-round auto-advance countdown (if one is
+    // pending); closing resumes it, so you never come back to find the loop
+    // silently skipped ahead while you were browsing.
+    toggleAllWords = () => {
+        this.allWordsOpen = !this.allWordsOpen;
+        if (this.allWordsOpen) {
+            clearTimeout(this.nextRoundTimeoutId);
+            this.nextRoundTimeoutId = null;
+        } else if (isSessionComplete(this.testSession)) {
+            this.nextRoundTimeoutId = setTimeout(() => {
+                this.nextRoundTimeoutId = null;
+                this.startRound();
+            }, NEXT_ROUND_DELAY_MS);
         }
-        this.render();
-    }
-
-    handleCancelDiscardTest = () => {
-        if (!this.testSession) return;
-        this.testSession.confirmingExit = false;
-        this.render();
-    }
-
-    handleConfirmDiscardTest = () => {
-        this.testSession = null;
-        this.setActiveSession(null);
         this.render();
     }
 
@@ -281,7 +280,8 @@ class LexiconApp {
         // "results matching your search" count (nothing else on the page
         // shows that anyway, so replacing it loses little).
         const masteredCount = this.vocabList.filter(item => item.status === 'Mastered').length;
-        const headerEl = createHeader(masteredCount, this.vocabList.length, this.state.search, this.persisted.streak.current);
+        const learningCount = this.vocabList.filter(item => item.status === 'Learning').length;
+        const headerEl = createHeader(masteredCount, this.vocabList.length, this.state.search, this.persisted.streak.current, this.allWordsOpen, learningCount);
         this.container.appendChild(headerEl);
 
         const searchInput = headerEl.querySelector('#search-input');
@@ -291,15 +291,14 @@ class LexiconApp {
             this.render();
         });
 
+        headerEl.querySelector('#header-all-words-btn')?.addEventListener('click', this.toggleAllWords);
+
         // Main Landmark Container
         const main = document.createElement('main');
         main.className = "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 flex-grow w-full space-y-4";
 
-        // Toolbar Component (always shown, including during Test Mode)
-        const testProgress = this.testSession
-            ? { resolved: Object.keys(this.testSession.results).length, total: this.testSession.items.length, complete: isSessionComplete(this.testSession) }
-            : null;
-        const toolbarEl = createToolbar(this.state, counts, testProgress);
+        // Toolbar Component - filters here also decide the loop's word pool
+        const toolbarEl = createToolbar(this.state, counts);
         main.appendChild(toolbarEl);
 
         // Toolbar interactivity bindings
@@ -363,54 +362,39 @@ class LexiconApp {
             this.render();
         });
 
-        toolbarEl.querySelector('#test-mode-btn')?.addEventListener('click', () => {
-            if (this.testSession) {
-                this.handleRequestCloseTest();
-            } else {
-                this.handleStartTest();
-            }
-        });
-
-        // Content below the toolbar: either the normal word list, or the
-        // active test's matching grid / results screen. Separation from the
-        // toolbar above is whitespace only now (no divider line) - matching
-        // how the rest of the page already lets color/spacing do the
-        // separating instead of drawn lines.
+        // Content below the toolbar: the practice loop, always - it's never
+        // replaced by anything else. Separation from the toolbar above is
+        // whitespace only (no divider line) - matching how the rest of the
+        // page already lets color/spacing do the separating instead of
+        // drawn lines.
         const rowContainer = document.createElement('div');
         rowContainer.id = 'word-row-container';
         rowContainer.className = "pt-6";
 
-        if (this.testSession) {
-            const testContentEl = createTestContent(this.testSession, {
-                onTileClick: this.handleTestTileClick,
-                onRequestClose: this.handleRequestCloseTest,
-                onCancelDiscard: this.handleCancelDiscardTest,
-                onConfirmDiscard: this.handleConfirmDiscardTest,
-                onDone: this.handleRequestCloseTest,
-                onRetry: this.handleRetryTest,
-                onAudioPlay: (w) => AudioService.speak(w),
-                showDef: this.state.showDef,
-                showSentence: this.state.showSentence
-            });
-            rowContainer.appendChild(testContentEl);
-        } else if (this.visibleWords.length === 0) {
-            rowContainer.innerHTML = `<div class="p-12 text-center text-[#767676]"><p>No matching vocabulary words found.</p></div>`;
-        } else {
-            rowContainer.className = "space-y-4 pt-6";
-            this.visibleWords.forEach(item => {
-                const rowEl = createWordRow(
-                    item, 
-                    this.state.showDef, 
-                    this.state.showSentence, 
-                    (w) => AudioService.speak(w), 
-                    this.handleStatusToggle
-                );
-                rowContainer.appendChild(rowEl);
-            });
-        }
+        const testContentEl = createTestContent(this.testSession, {
+            onTileClick: this.handleTestTileClick,
+            onAudioPlay: (w) => AudioService.speak(w),
+            showDef: this.state.showDef,
+            showSentence: this.state.showSentence
+        });
+        rowContainer.appendChild(testContentEl);
 
         main.appendChild(rowContainer);
         this.container.appendChild(main);
+
+        // All Words overlays on top of everything else - the loop above is
+        // still fully intact underneath, just visually covered.
+        if (this.allWordsOpen) {
+            const drawerEl = createAllWordsDrawer(
+                this.visibleWords,
+                this.state.showDef,
+                this.state.showSentence,
+                (w) => AudioService.speak(w),
+                this.handleStatusToggle,
+                this.toggleAllWords
+            );
+            this.container.appendChild(drawerEl);
+        }
 
         if (this.toast) {
             const toastEl = document.createElement('div');
