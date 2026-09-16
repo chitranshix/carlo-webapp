@@ -1,4 +1,4 @@
-export function createHeader(wordCount, searchValue) {
+export function createHeader(masteredCount, totalCount, searchValue, streakCount = 0) {
     const header = document.createElement('header');
     header.className = "bg-[#DADAD3] sticky top-0 z-30";
     header.innerHTML = `
@@ -11,8 +11,13 @@ export function createHeader(wordCount, searchValue) {
                         class="w-full pl-3.5 pr-8 py-2 bg-white border border-transparent rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] transition shadow-xs">
                     <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#767676] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
+                ${streakCount > 0 ? `
                 <div class="text-xs text-[#767676] hidden sm:block">
-                    <span id="word-count" class="font-semibold text-[#111111]">${wordCount}</span> words
+                    <span class="font-semibold text-[#111111]">${streakCount}</span> day streak
+                </div>
+                ` : ''}
+                <div class="text-xs text-[#767676] hidden sm:block">
+                    <span id="word-count" class="font-semibold text-[#111111]">${masteredCount}</span>/${totalCount} words mastered
                 </div>
             </div>
         </div>

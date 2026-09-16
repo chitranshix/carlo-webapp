@@ -1,6 +1,7 @@
 import { INITIAL_VOCAB_DATA } from './data/vocabData.js';
 import { AudioService } from './services/audioService.js';
-import { createTestSession, handleTileClick, isSessionComplete, statusForResult } from './services/testService.js';
+import { createTestSession, handleTileClick, isSessionComplete, statusForResult, getScore } from './services/testService.js';
+import { loadPersistedState, savePersistedState, recordTestCompletion } from './services/persistenceService.js';
 import { createHeader } from './components/Header.js';
 import { createToolbar } from './components/Toolbar.js';
 import { createWordRow } from './components/wordRow.js';
@@ -17,11 +18,30 @@ class LexiconApp {
         };
         
         this.vocabList = [...INITIAL_VOCAB_DATA];
+
+        // Restore saved statuses before anything reads vocabList - in
+        // particular before getTestPool() below, so the Mastered-exclusion
+        // pool logic sees restored statuses on the very first render.
+        this.persisted = loadPersistedState();
+        this.vocabList.forEach(item => {
+            const savedStatus = this.persisted.statuses[item.id];
+            if (savedStatus) item.status = savedStatus;
+        });
+
         // Test Mode is the app's default screen now, not an opt-in extra -
         // start with a live test session instead of the browse list. Safe
         // to call getTestPool() here since this.state/this.vocabList are
         // already set above; it just won't have <2 words on a fresh load.
-        this.testSession = createTestSession(this.getTestPool(), 5);
+        // An in-progress session saved before a refresh takes priority over
+        // starting a new one, so a reload resumes exactly where you left
+        // off; confirmingExit is reset to false either way since a modal
+        // reappearing on its own after a refresh would be surprising.
+        if (this.persisted.activeSession) {
+            this.testSession = { ...this.persisted.activeSession, confirmingExit: false };
+        } else {
+            this.testSession = createTestSession(this.getTestPool(), 5);
+            this.setActiveSession(this.testSession);
+        }
         this.toast = null;
         this.toastTimeoutId = null;
 
@@ -39,7 +59,32 @@ class LexiconApp {
         if (item.status === 'Unseen') item.status = 'Learning';
         else if (item.status === 'Learning') item.status = 'Mastered';
         else item.status = 'Unseen';
+        this.syncPersistedStatus(item.id, item.status);
+        this.persist();
         this.render();
+    }
+
+    // Statuses are stored keyed by the word's stable numeric id (not array
+    // index), so reordering or adding words later can't corrupt saved
+    // progress. Only non-default (non-Unseen) entries are kept, so the
+    // saved blob stays small.
+    syncPersistedStatus(id, status) {
+        if (status === 'Unseen') delete this.persisted.statuses[id];
+        else this.persisted.statuses[id] = status;
+    }
+
+    persist() {
+        savePersistedState(this.persisted);
+    }
+
+    // Saves (or clears) the live test session so a refresh mid-test can
+    // resume it. confirmingExit is deliberately dropped - it's transient
+    // UI state, not something that should reappear after a reload.
+    setActiveSession(session) {
+        this.persisted.activeSession = session
+            ? { items: session.items, wordOrder: session.wordOrder, cardOrder: session.cardOrder, selected: session.selected, results: session.results }
+            : null;
+        this.persist();
     }
 
     handleStartTest = () => {
@@ -49,6 +94,7 @@ class LexiconApp {
             return;
         }
         this.testSession = createTestSession(pool, Math.min(5, pool.length));
+        this.setActiveSession(this.testSession);
         this.render();
     }
 
@@ -69,6 +115,7 @@ class LexiconApp {
     handleRetryTest = () => {
         const pool = this.getTestPool();
         this.testSession = createTestSession(pool, Math.min(5, pool.length));
+        this.setActiveSession(this.testSession);
         this.render();
     }
 
@@ -92,6 +139,10 @@ class LexiconApp {
         handleTileClick(this.testSession, side, id);
         if (isSessionComplete(this.testSession)) {
             this.applyTestResults();
+        } else {
+            // Still in progress - save so a refresh resumes from here
+            // rather than starting a brand-new test.
+            this.setActiveSession(this.testSession);
         }
         this.render();
     }
@@ -102,7 +153,13 @@ class LexiconApp {
             const newStatus = statusForResult(result, item.originalStatus);
             const vocabItem = this.vocabList.find(v => v.id === item.id);
             if (vocabItem) vocabItem.status = newStatus;
+            this.syncPersistedStatus(item.id, newStatus);
         });
+        this.persisted = recordTestCompletion(this.persisted, getScore(this.testSession));
+        // The session's outcome is now permanently recorded above - nothing
+        // left to resume, so it's no longer an "active" session to save.
+        this.persisted.activeSession = null;
+        this.persist();
     }
 
     handleRequestCloseTest = () => {
@@ -119,6 +176,7 @@ class LexiconApp {
             this.testSession.confirmingExit = true;
         } else {
             this.testSession = null;
+            this.setActiveSession(null);
         }
         this.render();
     }
@@ -131,6 +189,7 @@ class LexiconApp {
 
     handleConfirmDiscardTest = () => {
         this.testSession = null;
+        this.setActiveSession(null);
         this.render();
     }
 
@@ -206,7 +265,11 @@ class LexiconApp {
         this.container.className = "min-h-screen flex flex-col bg-white text-[#333333]";
 
         // Header
-        const headerEl = createHeader(filtered.length, this.state.search);
+        // Deliberately unfiltered - this is overall mastery progress, not a
+        // "results matching your search" count (nothing else on the page
+        // shows that anyway, so replacing it loses little).
+        const masteredCount = this.vocabList.filter(item => item.status === 'Mastered').length;
+        const headerEl = createHeader(masteredCount, this.vocabList.length, this.state.search, this.persisted.streak.current);
         this.container.appendChild(headerEl);
 
         const searchInput = headerEl.querySelector('#search-input');
