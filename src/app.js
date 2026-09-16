@@ -297,43 +297,10 @@ class LexiconApp {
         const main = document.createElement('main');
         main.className = "max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 flex-grow w-full space-y-4";
 
-        // Toolbar Component - filters here also decide the loop's word pool
-        const toolbarEl = createToolbar(this.state, counts);
+        // Toolbar Component - just the Def/Sentence toggles now; pos/status
+        // filters live in the All Words drawer instead (see there).
+        const toolbarEl = createToolbar(this.state);
         main.appendChild(toolbarEl);
-
-        // Toolbar interactivity bindings
-        const posBtn = toolbarEl.querySelector('#pos-menu-btn');
-        const posList = toolbarEl.querySelector('#pos-menu-list');
-        const statusBtn = toolbarEl.querySelector('#status-menu-btn');
-        const statusList = toolbarEl.querySelector('#status-menu-list');
-
-        posBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            statusList.classList.add('hidden');
-            posList.classList.toggle('hidden');
-        });
-
-        statusBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            posList.classList.add('hidden');
-            statusList.classList.toggle('hidden');
-        });
-
-        posList?.querySelectorAll('div[data-value]').forEach(item => {
-            item.addEventListener('click', () => {
-                this.state.pos = item.getAttribute('data-value');
-                this.visibleWords = this.getFilteredData();
-                this.render();
-            });
-        });
-
-        statusList?.querySelectorAll('div[data-value]').forEach(item => {
-            item.addEventListener('click', () => {
-                this.state.status = item.getAttribute('data-value');
-                this.visibleWords = this.getFilteredData();
-                this.render();
-            });
-        });
 
         // Definitions and Sentences can each be hidden, but never both at
         // once - a card (in the list or in Test Mode) needs at least one
@@ -387,6 +354,8 @@ class LexiconApp {
         if (this.allWordsOpen) {
             const drawerEl = createAllWordsDrawer(
                 this.visibleWords,
+                this.state,
+                counts,
                 this.state.showDef,
                 this.state.showSentence,
                 (w) => AudioService.speak(w),
@@ -394,6 +363,42 @@ class LexiconApp {
                 this.toggleAllWords
             );
             this.container.appendChild(drawerEl);
+
+            // Filter dropdown interactivity - lives here (not in the drawer
+            // component itself) to match how the toolbar's own dropdowns
+            // used to be wired, before they moved into this drawer.
+            const posBtn = drawerEl.querySelector('#pos-menu-btn');
+            const posList = drawerEl.querySelector('#pos-menu-list');
+            const statusBtn = drawerEl.querySelector('#status-menu-btn');
+            const statusList = drawerEl.querySelector('#status-menu-list');
+
+            posBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                statusList.classList.add('hidden');
+                posList.classList.toggle('hidden');
+            });
+
+            statusBtn?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                posList.classList.add('hidden');
+                statusList.classList.toggle('hidden');
+            });
+
+            posList?.querySelectorAll('div[data-value]').forEach(item => {
+                item.addEventListener('click', () => {
+                    this.state.pos = item.getAttribute('data-value');
+                    this.visibleWords = this.getFilteredData();
+                    this.render();
+                });
+            });
+
+            statusList?.querySelectorAll('div[data-value]').forEach(item => {
+                item.addEventListener('click', () => {
+                    this.state.status = item.getAttribute('data-value');
+                    this.visibleWords = this.getFilteredData();
+                    this.render();
+                });
+            });
         }
 
         if (this.toast) {
