@@ -42,6 +42,15 @@ class LexiconApp {
             this.testSession = createTestSession(this.getTestPool(), 5);
             this.setActiveSession(this.testSession);
         }
+
+        // The browse list's row set is a snapshot, not a live query - it's
+        // recomputed whenever search/pos/status actually changes (see the
+        // handlers below), but NOT just because a status toggle made an
+        // item stop matching. Otherwise, toggling a word's status while a
+        // Status filter is active would yank it out of the list the moment
+        // you click it, before you could see the change register at all.
+        this.visibleWords = this.getFilteredData();
+
         this.toast = null;
         this.toastTimeoutId = null;
 
@@ -166,8 +175,12 @@ class LexiconApp {
         if (!this.testSession) return;
         const hasAnsweredAnything = Object.keys(this.testSession.results).length > 0;
         if (isSessionComplete(this.testSession)) {
-            // Results are already applied to vocabList - just close.
+            // Results are already applied to vocabList - just close. A
+            // completed test can change several statuses at once, so the
+            // browse list's snapshot is refreshed here rather than kept
+            // stale from before the test started.
             this.testSession = null;
+            this.visibleWords = this.getFilteredData();
         } else if (hasAnsweredAnything) {
             // Only warn about losing progress if there's actually progress
             // to lose - otherwise (e.g. landing on the default test screen
@@ -258,7 +271,6 @@ class LexiconApp {
     }
 
     render() {
-        const filtered = this.getFilteredData();
         const counts = this.getCounts();
 
         this.container.innerHTML = '';
@@ -275,6 +287,7 @@ class LexiconApp {
         const searchInput = headerEl.querySelector('#search-input');
         searchInput?.addEventListener('input', (e) => {
             this.state.search = e.target.value;
+            this.visibleWords = this.getFilteredData();
             this.render();
         });
 
@@ -310,6 +323,7 @@ class LexiconApp {
         posList?.querySelectorAll('div[data-value]').forEach(item => {
             item.addEventListener('click', () => {
                 this.state.pos = item.getAttribute('data-value');
+                this.visibleWords = this.getFilteredData();
                 this.render();
             });
         });
@@ -317,6 +331,7 @@ class LexiconApp {
         statusList?.querySelectorAll('div[data-value]').forEach(item => {
             item.addEventListener('click', () => {
                 this.state.status = item.getAttribute('data-value');
+                this.visibleWords = this.getFilteredData();
                 this.render();
             });
         });
@@ -378,11 +393,11 @@ class LexiconApp {
                 showSentence: this.state.showSentence
             });
             rowContainer.appendChild(testContentEl);
-        } else if (filtered.length === 0) {
+        } else if (this.visibleWords.length === 0) {
             rowContainer.innerHTML = `<div class="p-12 text-center text-[#767676]"><p>No matching vocabulary words found.</p></div>`;
         } else {
             rowContainer.className = "space-y-4 pt-6";
-            filtered.forEach(item => {
+            this.visibleWords.forEach(item => {
                 const rowEl = createWordRow(
                     item, 
                     this.state.showDef, 
